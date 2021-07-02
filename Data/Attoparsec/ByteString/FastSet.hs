@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, MagicHash #-}
+{-# LANGUAGE BangPatterns, CPP, MagicHash #-}
 
 -----------------------------------------------------------------------------
 -- |
@@ -34,7 +34,11 @@ module Data.Attoparsec.ByteString.FastSet
 
 import Data.Bits ((.&.), (.|.))
 import Foreign.Storable (peekByteOff, pokeByteOff)
+#if MIN_VERSION_base(4,16,0)
+import GHC.Exts (Int(I#), iShiftRA#, shiftL#, word8ToWord#, wordToWord8#)
+#else
 import GHC.Exts (Int(I#), iShiftRA#, narrow8Word#, shiftL#)
+#endif
 import GHC.Word (Word8(W8#))
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as B8
@@ -68,7 +72,11 @@ shiftR :: Int -> Int -> Int
 shiftR (I# x#) (I# i#) = I# (x# `iShiftRA#` i#)
 
 shiftL :: Word8 -> Int -> Word8
+#if MIN_VERSION_base(4,16,0)
+shiftL (W8# x#) (I# i#) = W8# (wordToWord8# (word8ToWord# x# `shiftL#` i#))
+#else
 shiftL (W8# x#) (I# i#) = W8# (narrow8Word# (x# `shiftL#` i#))
+#endif
 
 index :: Int -> I
 index i = I (i `shiftR` 3) (1 `shiftL` (i .&. 7))
